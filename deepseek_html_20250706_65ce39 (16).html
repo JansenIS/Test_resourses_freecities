@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Феод - Игровой интерфейс</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a3a, #0d1b26);
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+            padding: 20px;
+        }
+        
+        .game-container {
+            display: flex;
+            height: calc(100vh - 100px);
+            gap: 20px;
+        }
+        
+        /* Стили для гексагональной сетки */
+        .hex-grid {
+            position: relative;
+            width: 65%;
+            height: 100%;
+            background: rgba(10, 20, 30, 0.7);
+            border-radius: 12px;
+            border: 1px solid #3a506b;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .hex-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: -26px;
+        }
+        
+        .hex {
+            position: relative;
+            width: 160px;
+            height: 185px;
+            background: #2c3e50;
+            margin: 0 10px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid #3a506b;
+        }
+        
+        .hex:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(74, 107, 136, 0.7);
+            z-index: 10;
+        }
+        
+        .center-hex {
+            background: linear-gradient(135deg, #4a648f, #2c3e50);
+            border-color: #5d7aa0;
+        }
+        
+        .building-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+            color: #ffcc66;
+        }
+        
+        .hex-title {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            padding: 0 10px;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+        }
+        
+        .hex-resources {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+            gap: 8px;
+        }
+        
+        .resource-badge {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        /* Боковая панель */
+        .right-panel {
+            width: 35%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .game-menu {
+            background: rgba(10, 20, 30, 0.7);
+            border-radius: 12px;
+            border: 1px solid #3a506b;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            height: 40%;
+        }
+        
+        .menu-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 20px;
+            color: #ffcc66;
+            border-bottom: 1px solid #3a506b;
+            padding-bottom: 10px;
+        }
+        
+        .chat-container {
+            background: rgba(10, 20, 30, 0.7);
+            border-radius: 12px;
+            border: 1px solid #3a506b;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            height: 60%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: rgba(58, 80, 107, 0.4);
+        }
+        
+        .message-sender {
+            font-weight: bold;
+            color: #ffcc66;
+        }
+        
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #3a506b;
+            background: rgba(0, 0, 0, 0.4);
+            color: #e0e0e0;
+        }
+        
+        .chat-input button {
+            background: linear-gradient(135deg, #3a506b, #1c2e40);
+            border: none;
+            border-radius: 8px;
+            padding: 0 20px;
+            color: #e0e0e0;
+            cursor: pointer;
+        }
+        
+        /* Нижняя панель */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(10, 20, 30, 0.9);
+            border-top: 1px solid #3a506b;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 15px;
+            z-index: 100;
+            overflow-x: auto;
+        }
+        
+        .resource-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 6px;
+            transition: background 0.3s;
+            min-width: 120px;
+        }
+        
+        .resource-item:hover {
+            background: rgba(58, 80, 107, 0.4);
+        }
+        
+        .resource-icon {
+            font-size: 18px;
+            color: #ffcc66;
+        }
+        
+        .resource-value {
+            font-weight: bold;
+        }
+        
+        .resource-production {
+            color: #5bc0be;
+            font-size: 12px;
+            margin-left: 4px;
+        }
+        
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-left: auto;
+        }
+        
+        .player-title {
+            background: linear-gradient(135deg, #8e6e53, #6b4f35);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+        }
+        
+        .castle-level {
+            background: linear-gradient(135deg, #3a506b, #1c2e40);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .player-name {
+            color: #ffcc66;
+            font-weight: bold;
+        }
+        
+        .currency {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: linear-gradient(135deg, #4d7c0f, #3f6212);
+            padding: 5px 12px;
+            border-radius: 15px;
+        }
+        
+        /* Модальные окна */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1c2e40, #0d1b26);
+            width: 400px;
+            border-radius: 12px;
+            border: 1px solid #3a506b;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            padding: 25px;
+            position: relative;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #3a506b;
+            padding-bottom: 15px;
+        }
+        
+        .modal-title {
+            font-size: 22px;
+            color: #ffcc66;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: #e0e0e0;
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .close-modal:hover {
+            color: #ff6b6b;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #3a506b;
+        }
+        
+        .info-label {
+            color: #a0a0a0;
+        }
+        
+        .info-value {
+            font-weight: bold;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .modal-button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #3a506b, #1c2e40);
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-button:hover {
+            background: linear-gradient(135deg, #4a648f, #2c3e50);
+        }
+        
+        .primary {
+            background: linear-gradient(135deg, #5bc0be, #3a8b89);
+        }
+        
+        .primary:hover {
+            background: linear-gradient(135deg, #6bd0ce, #4a9b99);
+        }
+        
+        /* Стили для управления ресурсами */
+        .mining-assigned {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+        
+        .cost-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
+        
+        .mining-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+        
+        .mining-btn {
+            padding: 8px 15px;
+            background: #3a506b;
+            border: none;
+            color: #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .mining-btn:hover {
+            background: #4a648f;
+        }
+        
+        .upgrade-info {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #3a506b;
+        }
+        
+        .progress-bar {
+            height: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #5bc0be;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        
+        .assignment-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .assign-btn {
+            flex: 1;
+            padding: 8px;
+            background: #3a506b;
+            border: none;
+            color: #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .assign-btn:hover {
+            background: #4a648f;
+        }
+        
+        .building-cost {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+        
+        .recipe-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .recipe-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .recipe-cost {
+            margin: 10px 0;
+        }
+        
+        /* Вкладки */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 8px;
+            background: rgba(58, 80, 107, 0.4);
+            border: none;
+            border-radius: 5px;
+            color: #e0e0e0;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            background: #3a506b;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Новые стили для кнопок скорости */
+        .speed-controls {
+            display: flex;
+            gap: 8px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+        
+        .speed-btn {
+            padding: 8px 12px;
+            background: #3a506b;
+            border: none;
+            color: #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .speed-btn.active {
+            background: #5bc0be;
+            color: #1a2a3a;
+            font-weight: bold;
+        }
+        
+        .speed-btn:hover:not(.active) {
+            background: #4a648f;
+        }
+        
+        /* Стили для вкладок управления */
+        .management-tabs {
+            display: flex;
+            gap: 5px;
+            margin-top: 15px;
+        }
+        
+        .management-tab {
+            flex: 1;
+            padding: 8px;
+            background: rgba(58, 80, 107, 0.4);
+            border: none;
+            border-radius: 5px;
+            color: #e0e0e0;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .management-tab.active {
+            background: #3a506b;
+        }
+        
+        .management-content {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            height: 180px;
+            overflow-y: auto;
+        }
+        
+        .management-section {
+            display: none;
+        }
+        
+        .management-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Гексагональная сетка -->
+        <div class="hex-grid">
+            <div class="hex-row">
+                <div class="hex" id="mining">
+                    <i class="building-icon fas fa-hammer"></i>
+                    <div class="hex-title">Добыча</div>
+                    <div class="hex-resources">
+                        <div class="resource-badge">
+                            <i class="fas fa-users"></i> <span id="mining-workers">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hex" id="vassal">
+                    <i class="building-icon fas fa-shield-alt"></i>
+                    <div class="hex-title">Вассал</div>
+                </div>
+            </div>
+            
+            <div class="hex-row">
+                <div class="hex" id="windmill">
+                    <i class="building-icon fas fa-wind"></i>
+                    <div class="hex-title">Ветряк</div>
+                </div>
+                <div class="hex center-hex" id="castle">
+                    <i class="building-icon fas fa-crown"></i>
+                    <div class="hex-title">Замок</div>
+                    <div class="hex-resources">
+                        <div class="resource-badge">
+                            <i class="fas fa-chess-rook"></i> <span id="castle-level">1</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hex" id="villadium-mine">
+                    <i class="building-icon fas fa-gem"></i>
+                    <div class="hex-title">Вилладиум</div>
+                    <div class="hex-resources">
+                        <div class="resource-badge">
+                            <i class="fas fa-users"></i> <span id="villadium-workers">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hex-row">
+                <div class="hex" id="factory">
+                    <i class="building-icon fas fa-industry"></i>
+                    <div class="hex-title">Фабрика</div>
+                    <div class="hex-resources">
+                        <div class="resource-badge">
+                            <i class="fas fa-users"></i> <span id="factory-workers">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hex" id="wasteland">
+                    <i class="building-icon fas fa-question"></i>
+                    <div class="hex-title">Пустошь</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Боковая панель -->
+        <div class="right-panel">
+            <div class="game-menu">
+                <div class="menu-title">Управление феодом</div>
+                
+                <!-- Кнопки ускорения времени -->
+                <div class="speed-controls">
+                    <button class="speed-btn active" data-speed="1">x1</button>
+                    <button class="speed-btn" data-speed="2">x2</button>
+                    <button class="speed-btn" data-speed="10">x10</button>
+                    <button class="speed-btn" data-speed="100">x100</button>
+                    <button class="speed-btn" data-speed="1000">x1000</button>
+                </div>
+                
+                <!-- Вкладки управления -->
+                <div class="management-tabs">
+                    <button class="management-tab active" data-tab="map">Карта</button>
+                    <button class="management-tab" data-tab="wars">Войны</button>
+                    <button class="management-tab" data-tab="trade">Торговля</button>
+                    <button class="management-tab" data-tab="diplomacy">Дипломатия</button>
+                </div>
+                
+                <div class="management-content">
+                    <div class="management-section active" id="map-section">
+                        <h3>Карта Лурры</h3>
+                        <p>Ваш феод: <strong>Черные земли</strong></p>
+                        <p>Соседи: 
+                            <span class="ally">Северный баронство</span>, 
+                            <span class="enemy">Южное герцогство</span>
+                        </p>
+                        <p>Ресурсы территории: камень (богатые), лес (средний), руда (бедные)</p>
+                    </div>
+                    
+                    <div class="management-section" id="wars-section">
+                        <h3>Войны</h3>
+                        <p>Текущие конфликты отсутствуют</p>
+                        <p>Ваша армия: 0 рыцарей, 0 лучников</p>
+                        <p>Готовность: низкая</p>
+                    </div>
+                    
+                    <div class="management-section" id="trade-section">
+                        <h3>Торговля</h3>
+                        <p>Торговые пути: нет активных</p>
+                        <p>Последняя сделка: продажа 50 камня за 250 ДСМ</p>
+                        <p>Рыночные цены: камень (5 ДСМ), лес (3 ДСМ), руда (8 ДСМ)</p>
+                    </div>
+                    
+                    <div class="management-section" id="diplomacy-section">
+                        <h3>Дипломатия</h3>
+                        <p>Отношения с соседями:</p>
+                        <ul>
+                            <li>Северное баронство: союзник</li>
+                            <li>Южное герцогство: вражда</li>
+                            <li>Восточное графство: нейтралитет</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-container">
+                <div class="menu-title">Чат феодалов</div>
+                <div class="chat-messages">
+                    <div class="message">
+                        <span class="message-sender">Барон_Игорь:</span> Кто хочет объединиться против Герцога Южного?
+                    </div>
+                    <div class="message">
+                        <span class="message-sender">Графиня_Ольга:</span> Мои рыцари готовы к походу! Когда выступаем?
+                    </div>
+                    <div class="message">
+                        <span class="message-sender">Виконт_Сергей:</span> Продам 200 единиц стали, дешево!
+                    </div>
+                    <div class="message">
+                        <span class="message-sender">Фрайгерр_Макс:</span> Помогите! На меня напал соседний феод!
+                    </div>
+                    <div class="message">
+                        <span class="message-sender">Князь_Дмитрий:</span> Кто подскажет, как улучшить мануфактуру?
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" placeholder="Напишите сообщение...">
+                    <button><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Нижняя информационная панель -->
+    <div class="bottom-bar">
+        <div class="resource-item" id="stone-res">
+            <i class="resource-icon fas fa-mountain"></i>
+            <div>
+                <span class="resource-value" id="stone-value">1,250</span>
+                <span class="resource-production">(<span id="stone-production">0</span>/ч)</span>
+            </div>
+        </div>
+        
+        <div class="resource-item" id="wood-res">
+            <i class="resource-icon fas fa-tree"></i>
+            <div>
+                <span class="resource-value" id="wood-value">750</span>
+                <span class="resource-production">(<span id="wood-production">0</span>/ч)</span>
+            </div>
+        </div>
+        
+        <div class="resource-item" id="ore-res">
+            <i class="resource-icon fas fa-dice-d6"></i>
+            <div>
+                <span class="resource-value" id="ore-value">500</span>
+                <span class="resource-production">(<span id="ore-production">0</span>/ч)</span>
+            </div>
+        </div>
+        
+        <div class="resource-item" id="villadium-res">
+            <i class="resource-icon fas fa-bolt"></i>
+            <div>
+                <span class="resource-value" id="villadium-value">100</span>
+                <span class="resource-production">(<span id="villadium-production">0</span>/ч)</span>
+            </div>
+        </div>
+        
+        <!-- Новые производственные материалы -->
+        <div class="resource-item" id="steel-res">
+            <i class="resource-icon fas fa-cog"></i>
+            <div>
+                <span class="resource-value" id="steel-value">75</span>
+            </div>
+        </div>
+        
+        <div class="resource-item" id="electronics-res">
+            <i class="resource-icon fas fa-microchip"></i>
+            <div>
+                <span class="resource-value" id="electronics-value">40</span>
+            </div>
+        </div>
+        
+        <div class="resource-item" id="batteries-res">
+            <i class="resource-icon fas fa-battery-full"></i>
+            <div>
+                <span class="resource-value" id="batteries-value">25</span>
+            </div>
+        </div>
+        
+        <div class="resource-item" id="filters-res">
+            <i class="resource-icon fas fa-filter"></i>
+            <div>
+                <span class="resource-value" id="filters-value">10</span>
+            </div>
+        </div>
+        
+        <div class="peasants-item">
+            <i class="resource-icon fas fa-users"></i>
+            <div>
+                <span class="resource-value" id="peasants-total">30,000</span>
+                <span class="resource-production">(<span id="peasants-free">30,000</span> своб.)</span>
+            </div>
+        </div>
+        
+        <div class="player-info">
+            <div class="player-title">
+                <i class="fas fa-crown"></i> Барон
+            </div>
+            <div class="castle-level">
+                <i class="fas fa-chess-rook"></i> <span id="player-castle-level">1</span>
+            </div>
+            <div class="player-name">Роман_Черный</div>
+            <div class="currency">
+                <i class="fas fa-coins"></i> <span id="gold-value">1,250</span> ДСМ
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальные окна (всплывающие окна) -->
+    <div class="modal" id="castle-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Замок</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-item">
+                    <span class="info-label">Уровень:</span>
+                    <span class="info-value" id="castle-modal-level">1</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Крестьяне:</span>
+                    <span class="info-value" id="castle-modal-peasants">30,000</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Макс. уровень зданий:</span>
+                    <span class="info-value" id="castle-modal-max-level">1</span>
+                </div>
+                
+                <div class="upgrade-info">
+                    <h3>Улучшение до уровня <span id="castle-next-level">2</span></h3>
+                    <div class="building-cost" id="castle-cost">
+                        <div class="cost-item">
+                            <span>Камень:</span>
+                            <span id="castle-cost-stone">2,000</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Лес:</span>
+                            <span id="castle-cost-wood">1,000</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button primary" id="castle-upgrade-btn">Улучшить</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="mining-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Добыча ресурсов</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <button class="tab active" data-tab="stone">Камень</button>
+                    <button class="tab" data-tab="wood">Дерево</button>
+                    <button class="tab" data-tab="ore">Руда</button>
+                </div>
+                
+                <!-- Вкладка камня -->
+                <div class="tab-content active" id="stone-tab">
+                    <div class="info-item">
+                        <span class="info-label">Уровень добычи:</span>
+                        <span class="info-value" id="stone-mining-level">1</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Производство:</span>
+                        <span class="info-value" id="stone-production-modal">0/ч</span>
+                    </div>
+                    
+                    <div class="mining-assigned">
+                        <div class="cost-item">
+                            <span>Назначено крестьан:</span>
+                            <span id="stone-assigned">0</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Максимум:</span>
+                            <span id="stone-max">13,500</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mining-controls">
+                        <button class="mining-btn" data-resource="stone" data-amount="-2500">-2500</button>
+                        <button class="mining-btn" data-resource="stone" data-amount="-250">-250</button>
+                        <button class="mining-btn" data-resource="stone" data-amount="250">+250</button>
+                        <button class="mining-btn" data-resource="stone" data-amount="2500">+2500</button>
+                    </div>
+                    
+                    <div class="upgrade-info">
+                        <h3>Улучшение до уровня <span id="stone-next-level">2</span></h3>
+                        <div class="building-cost" id="stone-cost">
+                            <div class="cost-item">
+                                <span>Камень:</span>
+                                <span id="stone-cost-stone">1,500</span>
+                            </div>
+                            <div class="cost-item">
+                                <span>Лес:</span>
+                                <span id="stone-cost-wood">500</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Вкладка дерева -->
+                <div class="tab-content" id="wood-tab">
+                    <div class="info-item">
+                        <span class="info-label">Уровень добычи:</span>
+                        <span class="info-value" id="wood-mining-level">1</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Производство:</span>
+                        <span class="info-value" id="wood-production-modal">0/ч</span>
+                    </div>
+                    
+                    <div class="mining-assigned">
+                        <div class="cost-item">
+                            <span>Назначено крестьан:</span>
+                            <span id="wood-assigned">0</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Максимум:</span>
+                            <span id="wood-max">13,500</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mining-controls">
+                        <button class="mining-btn" data-resource="wood" data-amount="-2500">-2500</button>
+                        <button class="mining-btn" data-resource="wood" data-amount="-250">-250</button>
+                        <button class="mining-btn" data-resource="wood" data-amount="250">+250</button>
+                        <button class="mining-btn" data-resource="wood" data-amount="2500">+2500</button>
+                    </div>
+                    
+                    <div class="upgrade-info">
+                        <h3>Улучшение до уровня <span id="wood-next-level">2</span></h3>
+                        <div class="building-cost" id="wood-cost">
+                            <div class="cost-item">
+                                <span>Камень:</span>
+                                <span id="wood-cost-stone">800</span>
+                            </div>
+                            <div class="cost-item">
+                                <span>Лес:</span>
+                                <span id="wood-cost-wood">400</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Вкладка руды -->
+                <div class="tab-content" id="ore-tab">
+                    <div class="info-item">
+                        <span class="info-label">Уровень добычи:</span>
+                        <span class="info-value" id="ore-mining-level">1</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Производство:</span>
+                        <span class="info-value" id="ore-production-modal">0/ч</span>
+                    </div>
+                    
+                    <div class="mining-assigned">
+                        <div class="cost-item">
+                            <span>Назначено крестьан:</span>
+                            <span id="ore-assigned">0</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Максимум:</span>
+                            <span id="ore-max">13,500</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mining-controls">
+                        <button class="mining-btn" data-resource="ore" data-amount="-2500">-2500</button>
+                        <button class="mining-btn" data-resource="ore" data-amount="-250">-250</button>
+                        <button class="mining-btn" data-resource="ore" data-amount="250">+250</button>
+                        <button class="mining-btn" data-resource="ore" data-amount="2500">+2500</button>
+                    </div>
+                    
+                    <div class="upgrade-info">
+                        <h3>Улучшение до уровня <span id="ore-next-level">2</span></h3>
+                        <div class="building-cost" id="ore-cost">
+                            <div class="cost-item">
+                                <span>Камень:</span>
+                                <span id="ore-cost-stone">1,200</span>
+                            </div>
+                            <div class="cost-item">
+                                <span>Лес:</span>
+                                <span id="ore-cost-wood">300</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button primary" id="mining-upgrade-btn" data-building="quarry">Улучшить</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="vassal-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Вассал</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; padding: 30px;">
+                    <i class="fas fa-tools" style="font-size: 48px; color: #ffcc66; margin-bottom: 20px;"></i>
+                    <h3>Раздел в разработке</h3>
+                    <p>Найм войск будет доступен в следующем обновлении</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button">Закрыть</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="windmill-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Ветряк</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; padding: 30px;">
+                    <i class="fas fa-tools" style="font-size: 48px; color: #ffcc66; margin-bottom: 20px;"></i>
+                    <h3>Раздел в разработке</h3>
+                    <p>Энергетическая система будет доступна в следующем обновлении</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button">Закрыть</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="villadium-mine-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Вилладиумная шахта</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-item">
+                    <span class="info-label">Уровень:</span>
+                    <span class="info-value" id="villadium-level">1</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Производство вилладиума:</span>
+                    <span class="info-value" id="villadium-production">0/ч</span>
+                </div>
+                
+                <div class="mining-assigned">
+                    <div class="cost-item">
+                        <span>Назначено крестьан:</span>
+                        <span id="villadium-assigned">0</span>
+                    </div>
+                    <div class="cost-item">
+                        <span>Максимум:</span>
+                        <span id="villadium-max">6,750</span>
+                    </div>
+                </div>
+                
+                <div class="mining-controls">
+                    <button class="mining-btn" data-resource="villadium" data-amount="-2500">-2500</button>
+                    <button class="mining-btn" data-resource="villadium" data-amount="-250">-250</button>
+                    <button class="mining-btn" data-resource="villadium" data-amount="250">+250</button>
+                    <button class="mining-btn" data-resource="villadium" data-amount="2500">+2500</button>
+                </div>
+                
+                <div class="upgrade-info">
+                    <h3>Улучшение до уровня <span id="villadium-next-level">2</span></h3>
+                    <div class="building-cost" id="villadium-cost">
+                        <div class="cost-item">
+                            <span>Камень:</span>
+                            <span id="villadium-cost-stone">2,500</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Сталь:</span>
+                            <span id="villadium-cost-steel">100</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button primary" id="villadium-upgrade-btn">Улучшить</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="factory-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Фабрика</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-item">
+                    <span class="info-label">Уровень:</span>
+                    <span class="info-value" id="factory-level">1</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Производственные линии:</span>
+                    <span class="info-value" id="production-lines">1</span>
+                </div>
+                
+                <div class="recipe-card">
+                    <div class="recipe-header">
+                        <div class="recipe-name">Производственные линии</div>
+                    </div>
+                    <div id="production-lines-container">
+                        <div class="production-line" data-line="0">
+                            <div class="line-header">
+                                <div class="line-name">Линия #1</div>
+                            </div>
+                            <select class="recipe-select" data-line="0">
+                                <option value="">Выберите рецепт</option>
+                                <option value="steel">Сталь</option>
+                                <option value="electronics">Эл. компоненты</option>
+                                <option value="batteries">Аккумуляторы</option>
+                                <option value="filters">Вилл. фильтры</option>
+                            </select>
+                            <div class="mining-assigned">
+                                <div class="cost-item">
+                                    <span>Назначено крестьан:</span>
+                                    <span class="line-assigned">0</span>
+                                </div>
+                                <div class="cost-item">
+                                    <span>Прогресс:</span>
+                                    <span class="line-progress">0%</span>
+                                </div>
+                            </div>
+                            <div class="mining-controls">
+                                <button class="mining-btn" data-line="0" data-amount="-250">-250</button>
+                                <button class="mining-btn" data-line="0" data-amount="-25">-25</button>
+                                <button class="mining-btn" data-line="0" data-amount="25">+25</button>
+                                <button class="mining-btn" data-line="0" data-amount="250">+250</button>
+                            </div>
+                            <!-- Добавлен прогресс-бар -->
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="upgrade-info">
+                    <h3>Улучшение до уровня <span id="factory-next-level">2</span></h3>
+                    <div class="building-cost" id="factory-cost">
+                        <div class="cost-item">
+                            <span>Камень:</span>
+                            <span id="factory-cost-stone">3,000</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Лес:</span>
+                            <span id="factory-cost-wood">1,500</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Сталь:</span>
+                            <span id="factory-cost-steel">200</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button primary" id="factory-upgrade-btn">Улучшить</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно для пустоши -->
+    <div class="modal" id="wasteland-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Пустошь</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; padding: 30px;">
+                    <i class="fas fa-tools" style="font-size: 48px; color: #ffcc66; margin-bottom: 20px;"></i>
+                    <h3>Раздел в разработке</h3>
+                    <p>Освоение новых территорий будет доступно в следующем обновлении</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button">Закрыть</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Game state
+        const gameState = {
+            resources: {
+                stone: 1250,
+                wood: 750,
+                ore: 500,
+                villadium: 100,
+                steel: 75,
+                electronicComponents: 40,
+                accumulators: 25,
+                villadiumFilters: 10,
+                gold: 1250
+            },
+            peasants: {
+                total: 30000,
+                free: 30000,
+                assigned: {
+                    stone: 0,
+                    wood: 0,
+                    ore: 0,
+                    villadium: 0,
+                    production: 0
+                }
+            },
+            buildings: {
+                castle: 1,
+                quarry: 1,
+                mine: 1,
+                factory: 1,
+                sawmill: 1,
+                villadiumMine: 1
+            },
+            productionLines: [
+                {
+                    recipe: null,
+                    assigned: 0,
+                    progress: 0
+                }
+            ],
+            speed: 1
+        };
+        
+        // Количество крестьян по уровням замка
+        const peasantsByCastleLevel = [
+            30000, 42000, 42250, 42500, 42750, 43000, 43500, 44000, 44500, 45000,
+            46000, 47000, 48000, 49000, 50000, 52000, 54000, 56000, 58000, 60000,
+            63000, 66000, 69000, 72000, 75000, 80000, 85000, 90000, 95000, 100000,
+            130000, 160000, 190000, 220000, 250000, 300000, 350000, 400000, 450000, 500000
+        ];
+        
+        // Стоимость улучшений зданий
+        const buildingCosts = {
+            castle: { stone: 2000, wood: 1000 },
+            quarry: { stone: 1500, wood: 500 },
+            mine: { stone: 1200, wood: 300 },
+            factory: { stone: 3000, wood: 1500, steel: 200 },
+            sawmill: { stone: 800, wood: 400 },
+            villadiumMine: { stone: 2500, steel: 100 }
+        };
+        
+        // Скорости производства для фабрики (единиц в час на 250 крестьан)
+        const factorySpeeds = [
+            0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5,
+            2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9,
+            11, 13, 15, 17, 19, 22, 25, 28, 31, 35,
+            40, 45, 50, 55, 60, 70, 80, 90, 100, 125
+        ];
+        
+        // Скорости добычи ресурсов (ресурсов в секунду на одного крестьянина)
+        const miningRates = {
+            stone: 0.000694 / 60,
+            wood: 0.001042 / 60,
+            ore: 0.000347 / 60,
+            villadium: 0.000069 / 60
+        };
+        
+        // Функция для форматирования чисел
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        // Расчет максимального количества крестьян для ресурсов
+        function getMaxWorkers(resource) {
+            const totalPeasants = gameState.peasants.total;
+            let max;
+            
+            if (resource === 'villadium') {
+                // 25% от общего числа крестьян, округленное до ближайшего кратного 250
+                max = Math.round(0.25 * totalPeasants / 250) * 250;
+            } else {
+                // 40% от общего числа крестьян, округленное до ближайшего кратного 250
+                max = Math.round(0.4 * totalPeasants / 250) * 250;
+            }
+            
+            return max;
+        }
+        
+        // Обновление интерфейса
+        function updateUI() {
+            // Обновление ресурсов в нижней панели
+            document.getElementById('stone-value').textContent = formatNumber(Math.round(gameState.resources.stone));
+            document.getElementById('wood-value').textContent = formatNumber(Math.round(gameState.resources.wood));
+            document.getElementById('ore-value').textContent = formatNumber(Math.round(gameState.resources.ore));
+            document.getElementById('villadium-value').textContent = formatNumber(Math.round(gameState.resources.villadium));
+            document.getElementById('steel-value').textContent = formatNumber(Math.round(gameState.resources.steel));
+            document.getElementById('electronics-value').textContent = formatNumber(Math.round(gameState.resources.electronicComponents));
+            document.getElementById('batteries-value').textContent = formatNumber(Math.round(gameState.resources.accumulators));
+            document.getElementById('filters-value').textContent = formatNumber(Math.round(gameState.resources.villadiumFilters));
+            document.getElementById('peasants-total').textContent = formatNumber(gameState.peasants.total);
+            document.getElementById('peasants-free').textContent = formatNumber(gameState.peasants.free);
+            document.getElementById('player-castle-level').textContent = gameState.buildings.castle;
+            document.getElementById('gold-value').textContent = formatNumber(gameState.resources.gold);
+            
+            // Обновление производства
+            document.getElementById('stone-production').textContent = formatNumber(Math.round(gameState.peasants.assigned.stone * miningRates.stone * 3600));
+            document.getElementById('wood-production').textContent = formatNumber(Math.round(gameState.peasants.assigned.wood * miningRates.wood * 3600));
+            document.getElementById('ore-production').textContent = formatNumber(Math.round(gameState.peasants.assigned.ore * miningRates.ore * 3600));
+            document.getElementById('villadium-production').textContent = formatNumber(Math.round(gameState.peasants.assigned.villadium * miningRates.villadium * 3600));
+            
+            // Обновление гексов
+            document.getElementById('castle-level').textContent = gameState.buildings.castle;
+            document.getElementById('mining-workers').textContent = formatNumber(
+                gameState.peasants.assigned.stone + 
+                gameState.peasants.assigned.wood + 
+                gameState.peasants.assigned.ore
+            );
+            document.getElementById('villadium-workers').textContent = formatNumber(gameState.peasants.assigned.villadium);
+            document.getElementById('factory-workers').textContent = formatNumber(gameState.peasants.assigned.production);
+            
+            // Обновление модальных окон
+            updateModalContent();
+        }
+        
+        // Обновление содержимого модальных окон
+        function updateModalContent() {
+            // Замок
+            document.getElementById('castle-modal-level').textContent = gameState.buildings.castle;
+            document.getElementById('castle-modal-peasants').textContent = formatNumber(gameState.peasants.total);
+            document.getElementById('castle-modal-max-level').textContent = gameState.buildings.castle;
+            document.getElementById('castle-next-level').textContent = gameState.buildings.castle + 1;
+            
+            const castleCost = getBuildingCost('castle', gameState.buildings.castle);
+            document.getElementById('castle-cost-stone').textContent = formatNumber(castleCost.stone);
+            document.getElementById('castle-cost-wood').textContent = formatNumber(castleCost.wood);
+            
+            // Каменоломня (вкладка камня)
+            document.getElementById('stone-mining-level').textContent = gameState.buildings.quarry;
+            document.getElementById('stone-production-modal').textContent = formatNumber(Math.round(gameState.peasants.assigned.stone * miningRates.stone * 3600)) + '/ч';
+            document.getElementById('stone-assigned').textContent = formatNumber(gameState.peasants.assigned.stone);
+            document.getElementById('stone-max').textContent = formatNumber(getMaxWorkers('stone'));
+            document.getElementById('stone-next-level').textContent = gameState.buildings.quarry + 1;
+            
+            const quarryCost = getBuildingCost('quarry', gameState.buildings.quarry);
+            document.getElementById('stone-cost-stone').textContent = formatNumber(quarryCost.stone);
+            document.getElementById('stone-cost-wood').textContent = formatNumber(quarryCost.wood);
+            
+            // Лесопилка (вкладка дерева)
+            document.getElementById('wood-mining-level').textContent = gameState.buildings.sawmill;
+            document.getElementById('wood-production-modal').textContent = formatNumber(Math.round(gameState.peasants.assigned.wood * miningRates.wood * 3600)) + '/ч';
+            document.getElementById('wood-assigned').textContent = formatNumber(gameState.peasants.assigned.wood);
+            document.getElementById('wood-max').textContent = formatNumber(getMaxWorkers('wood'));
+            document.getElementById('wood-next-level').textContent = gameState.buildings.sawmill + 1;
+            
+            const sawmillCost = getBuildingCost('sawmill', gameState.buildings.sawmill);
+            document.getElementById('wood-cost-stone').textContent = formatNumber(sawmillCost.stone);
+            document.getElementById('wood-cost-wood').textContent = formatNumber(sawmillCost.wood);
+            
+            // Шахта руды (вкладка руды)
+            document.getElementById('ore-mining-level').textContent = gameState.buildings.mine;
+            document.getElementById('ore-production-modal').textContent = formatNumber(Math.round(gameState.peasants.assigned.ore * miningRates.ore * 3600)) + '/ч';
+            document.getElementById('ore-assigned').textContent = formatNumber(gameState.peasants.assigned.ore);
+            document.getElementById('ore-max').textContent = formatNumber(getMaxWorkers('ore'));
+            document.getElementById('ore-next-level').textContent = gameState.buildings.mine + 1;
+            
+            const mineCost = getBuildingCost('mine', gameState.buildings.mine);
+            document.getElementById('ore-cost-stone').textContent = formatNumber(mineCost.stone);
+            document.getElementById('ore-cost-wood').textContent = formatNumber(mineCost.wood);
+            
+            // Вилладиумная шахта
+            document.getElementById('villadium-level').textContent = gameState.buildings.villadiumMine;
+            document.getElementById('villadium-production').textContent = formatNumber(Math.round(gameState.peasants.assigned.villadium * miningRates.villadium * 3600)) + '/ч';
+            document.getElementById('villadium-assigned').textContent = formatNumber(gameState.peasants.assigned.villadium);
+            document.getElementById('villadium-max').textContent = formatNumber(getMaxWorkers('villadium'));
+            document.getElementById('villadium-next-level').textContent = gameState.buildings.villadiumMine + 1;
+            
+            const villadiumCost = getBuildingCost('villadiumMine', gameState.buildings.villadiumMine);
+            document.getElementById('villadium-cost-stone').textContent = formatNumber(villadiumCost.stone);
+            document.getElementById('villadium-cost-steel').textContent = formatNumber(villadiumCost.steel);
+            
+            // Фабрика
+            document.getElementById('factory-level').textContent = gameState.buildings.factory;
+            document.getElementById('production-lines').textContent = gameState.productionLines.length;
+            
+            // Обновление производственных линий
+            gameState.productionLines.forEach((line, index) => {
+                const lineElement = document.querySelector(`.production-line[data-line="${index}"]`);
+                if (lineElement) {
+                    const select = lineElement.querySelector('.recipe-select');
+                    if (line.recipe) {
+                        select.value = line.recipe;
+                    }
+                    
+                    const assignedSpan = lineElement.querySelector('.line-assigned');
+                    if (assignedSpan) {
+                        assignedSpan.textContent = formatNumber(line.assigned);
+                    }
+                    
+                    const progressSpan = lineElement.querySelector('.line-progress');
+                    if (progressSpan) {
+                        progressSpan.textContent = `${Math.round(line.progress * 100)}%`;
+                    }
+                    
+                    const progressFill = lineElement.querySelector('.progress-fill');
+                    if (progressFill) {
+                        progressFill.style.width = `${line.progress * 100}%`;
+                    }
+                }
+            });
+            
+            const factoryCost = getBuildingCost('factory', gameState.buildings.factory);
+            document.getElementById('factory-cost-stone').textContent = formatNumber(factoryCost.stone);
+            document.getElementById('factory-cost-wood').textContent = formatNumber(factoryCost.wood);
+            document.getElementById('factory-cost-steel').textContent = formatNumber(factoryCost.steel);
+            document.getElementById('factory-next-level').textContent = gameState.buildings.factory + 1;
+            
+            // Обновляем кнопку улучшения для вкладок добычи
+            updateUpgradeButtonBuilding();
+        }
+        
+        // Получение стоимости улучшения здания
+        function getBuildingCost(buildingKey, level) {
+            const baseCost = buildingCosts[buildingKey];
+            const cost = {};
+            
+            for (const [resource, amount] of Object.entries(baseCost)) {
+                cost[resource] = Math.round(amount * Math.pow(1.5, level - 1));
+            }
+            
+            return cost;
+        }
+        
+        // Назначение крестьан на добычу
+        function assignPeasants(resource, amount) {
+            const max = getMaxWorkers(resource);
+            
+            let newAmount = gameState.peasants.assigned[resource] + amount;
+            
+            // Проверка границ
+            if (newAmount < 0) newAmount = 0;
+            if (newAmount > max) newAmount = max;
+            if (newAmount > gameState.peasants.assigned[resource] && 
+                amount > gameState.peasants.free) {
+                newAmount = gameState.peasants.assigned[resource] + gameState.peasants.free;
+            }
+            
+            // Расчет разницы
+            const diff = newAmount - gameState.peasants.assigned[resource];
+            
+            // Обновление состояния
+            gameState.peasants.assigned[resource] = newAmount;
+            gameState.peasants.free -= diff;
+            
+            updateUI();
+        }
+        
+        // Назначение крестьан на производственную линию
+        function assignToProduction(lineIndex, amount) {
+            if (isNaN(lineIndex) || isNaN(amount)) {
+                console.error("Invalid assignment values", lineIndex, amount);
+                return;
+            }
+            
+            try {
+                const line = gameState.productionLines[lineIndex];
+                if (!line) {
+                    console.error(`Production line ${lineIndex} not found`);
+                    return;
+                }
+                
+                let newAmount = line.assigned + amount;
+                
+                // Проверка границ
+                if (newAmount < 0) newAmount = 0;
+                if (newAmount > gameState.peasants.free + line.assigned) {
+                    newAmount = gameState.peasants.free + line.assigned;
+                }
+                
+                // Расчет разницы
+                const diff = newAmount - line.assigned;
+                
+                // Обновление состояния
+                line.assigned = newAmount;
+                gameState.peasants.assigned.production += diff;
+                gameState.peasants.free -= diff;
+                
+                updateUI();
+            } catch (error) {
+                console.error("Assignment error:", error);
+                alert(`Ошибка назначения: ${error.message}`);
+            }
+        }
+        
+        // Смена рецепта на производственной линии
+        function changeRecipe(lineIndex, recipe) {
+            gameState.productionLines[lineIndex].recipe = recipe;
+            gameState.productionLines[lineIndex].progress = 0;
+            updateUI();
+        }
+        
+        // Функция для рендеринга новых производственных линий
+        function renderProductionLines() {
+            const container = document.getElementById('production-lines-container');
+            container.innerHTML = '';
+            
+            gameState.productionLines.forEach((line, index) => {
+                const lineElement = document.createElement('div');
+                lineElement.className = 'production-line';
+                lineElement.dataset.line = index;
+                
+                lineElement.innerHTML = `
+                    <div class="line-header">
+                        <div class="line-name">Линия #${index + 1}</div>
+                    </div>
+                    <select class="recipe-select" data-line="${index}">
+                        <option value="">Выберите рецепт</option>
+                        <option value="steel" ${line.recipe === 'steel' ? 'selected' : ''}>Сталь</option>
+                        <option value="electronics" ${line.recipe === 'electronics' ? 'selected' : ''}>Эл. компоненты</option>
+                        <option value="batteries" ${line.recipe === 'batteries' ? 'selected' : ''}>Аккумуляторы</option>
+                        <option value="filters" ${line.recipe === 'filters' ? 'selected' : ''}>Вилл. фильтры</option>
+                    </select>
+                    <div class="mining-assigned">
+                        <div class="cost-item">
+                            <span>Назначено крестьан:</span>
+                            <span class="line-assigned">${formatNumber(line.assigned)}</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Прогресс:</span>
+                            <span class="line-progress">${Math.round(line.progress * 100)}%</span>
+                        </div>
+                    </div>
+                    <div class="mining-controls">
+                        <button class="mining-btn" data-line="${index}" data-amount="-250">-250</button>
+                        <button class="mining-btn" data-line="${index}" data-amount="-25">-25</button>
+                        <button class="mining-btn" data-line="${index}" data-amount="25">+25</button>
+                        <button class="mining-btn" data-line="${index}" data-amount="250">+250</button>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${line.progress * 100}%"></div>
+                    </div>
+                `;
+                
+                container.appendChild(lineElement);
+            });
+            
+            // Назначаем обработчики для новых элементов
+            document.querySelectorAll('.recipe-select').forEach(select => {
+                select.addEventListener('change', function() {
+                    const lineIndex = parseInt(this.dataset.line);
+                    changeRecipe(lineIndex, this.value);
+                });
+            });
+            
+            document.querySelectorAll('.mining-btn[data-line]').forEach(button => {
+                button.addEventListener('click', function() {
+                    const lineIndex = parseInt(this.dataset.line);
+                    const amount = parseInt(this.dataset.amount);
+                    assignToProduction(lineIndex, amount);
+                });
+            });
+        }
+        
+        // Улучшение здания
+        function upgradeBuilding(buildingKey) {
+            try {
+                // Проверка возможности улучшения
+                if (buildingKey !== 'castle' && 
+                    gameState.buildings[buildingKey] >= gameState.buildings.castle) {
+                    alert(`Максимальный уровень достигнут! Сначала улучшите замок.`);
+                    return;
+                }
+                
+                // Расчет стоимости улучшения
+                const cost = getBuildingCost(buildingKey, gameState.buildings[buildingKey]);
+                
+                // Проверка ресурсов
+                for (const [resource, amount] of Object.entries(cost)) {
+                    if (gameState.resources[resource] < amount) {
+                        alert(`Не хватает ${resource} для улучшения. Требуется: ${formatNumber(amount)}, имеется: ${formatNumber(gameState.resources[resource])}`);
+                        return;
+                    }
+                }
+                
+                // Трата ресурсов
+                for (const [resource, amount] of Object.entries(cost)) {
+                    gameState.resources[resource] -= amount;
+                }
+                
+                // Улучшение здания
+                gameState.buildings[buildingKey]++;
+                
+                // Добавление новой производственной линии каждые 5 уровней фабрики
+                if (buildingKey === 'factory' && gameState.buildings.factory % 5 === 0) {
+                    gameState.productionLines.push({
+                        recipe: null,
+                        assigned: 0,
+                        progress: 0
+                    });
+                    renderProductionLines();
+                }
+                
+                // Обновление крестьан при улучшении замка
+                if (buildingKey === 'castle') {
+                    const oldTotal = gameState.peasants.total;
+                    const newLevel = gameState.buildings.castle;
+                    
+                    if (newLevel - 1 < peasantsByCastleLevel.length) {
+                        gameState.peasants.total = peasantsByCastleLevel[newLevel - 1];
+                        gameState.peasants.free += (gameState.peasants.total - oldTotal);
+                    }
+                }
+                
+                updateUI();
+                alert(`Улучшено здание: ${getBuildingName(buildingKey)} до уровня ${gameState.buildings[buildingKey]}`);
+            } catch (error) {
+                console.error("Upgrade error:", error);
+                alert(`Ошибка при улучшении: ${error.message}`);
+            }
+        }
+        
+        // Получение названия здания по ключу
+        function getBuildingName(key) {
+            const map = {
+                'quarry': 'Каменоломня',
+                'mine': 'Шахта руды',
+                'sawmill': 'Лесопилка',
+                'villadiumMine': 'Вилладиумная шахта',
+                'castle': 'Замок',
+                'factory': 'Фабрика'
+            };
+            return map[key];
+        }
+        
+        // Обновить кнопку улучшения в соответствии с активной вкладкой
+        function updateUpgradeButtonBuilding() {
+            const activeTab = document.querySelector('#mining-modal .tab.active');
+            if (!activeTab) return;
+            
+            const tabName = activeTab.dataset.tab;
+            const buildingMap = {
+                'stone': 'quarry',
+                'wood': 'sawmill',
+                'ore': 'mine'
+            };
+            
+            if (buildingMap[tabName]) {
+                document.getElementById('mining-upgrade-btn').dataset.building = buildingMap[tabName];
+            }
+        }
+        
+        // Инициализация игры
+        function initGame() {
+            // Назначаем обработчики для открытия модальных окон
+            document.querySelectorAll('.hex, .resource-item').forEach(element => {
+                element.addEventListener('click', function() {
+                    let modalId;
+                    
+                    if(this.id === 'castle') modalId = 'castle-modal';
+                    else if(this.id === 'mining') modalId = 'mining-modal';
+                    else if(this.id === 'vassal') modalId = 'vassal-modal';
+                    else if(this.id === 'windmill') modalId = 'windmill-modal';
+                    else if(this.id === 'villadium-mine') modalId = 'villadium-mine-modal';
+                    else if(this.id === 'factory') modalId = 'factory-modal';
+                    else if(this.id === 'wasteland') modalId = 'wasteland-modal';
+                    else if(this.id === 'stone-res') modalId = 'mining-modal';
+                    else if(this.id === 'wood-res') modalId = 'mining-modal';
+                    else if(this.id === 'ore-res') modalId = 'mining-modal';
+                    else if(this.id === 'villadium-res') modalId = 'villadium-mine-modal';
+                    
+                    if(modalId) {
+                        document.getElementById(modalId).classList.add('active');
+                        updateModalContent();
+                    }
+                });
+            });
+            
+            // Закрытие модальных окон
+            document.querySelectorAll('.close-modal').forEach(button => {
+                button.addEventListener('click', function() {
+                    this.closest('.modal').classList.remove('active');
+                });
+            });
+            
+            // Закрытие при клике вне окна
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if(e.target === this) {
+                        this.classList.remove('active');
+                    }
+                });
+            });
+            
+            // Обработчики для кнопок назначения крестьан
+            document.querySelectorAll('.mining-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const resource = this.getAttribute('data-resource');
+                    const amount = parseInt(this.getAttribute('data-amount'));
+                    if (resource) {
+                        assignPeasants(resource, amount);
+                    }
+                });
+            });
+            
+            // Обработчики для кнопок улучшения зданий
+            document.getElementById('castle-upgrade-btn').addEventListener('click', function() {
+                upgradeBuilding('castle');
+            });
+            
+            document.getElementById('mining-upgrade-btn').addEventListener('click', function() {
+                // Берем здание из атрибута data-building
+                const buildingKey = this.dataset.building;
+                upgradeBuilding(buildingKey);
+                // Обновляем кнопку после улучшения
+                updateUpgradeButtonBuilding();
+            });
+            
+            document.getElementById('villadium-upgrade-btn').addEventListener('click', function() {
+                upgradeBuilding('villadiumMine');
+            });
+            
+            document.getElementById('factory-upgrade-btn').addEventListener('click', function() {
+                upgradeBuilding('factory');
+            });
+            
+            // Обработчики для смены рецепта
+            document.querySelectorAll('.recipe-select').forEach(select => {
+                select.addEventListener('change', function() {
+                    const lineIndex = parseInt(this.getAttribute('data-line'));
+                    changeRecipe(lineIndex, this.value);
+                });
+            });
+            
+            // Обработчики для назначения крестьан на производственные линии
+            document.querySelectorAll('.mining-btn[data-line]').forEach(button => {
+                button.addEventListener('click', function() {
+                    const lineIndex = parseInt(this.getAttribute('data-line'));
+                    const amount = parseInt(this.getAttribute('data-amount'));
+                    assignToProduction(lineIndex, amount);
+                });
+            });
+            
+            // Переключение вкладок в модальном окне добычи
+            document.querySelectorAll('#mining-modal .tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    
+                    // Удаляем активный класс у всех вкладок
+                    document.querySelectorAll('#mining-modal .tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('#mining-modal .tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Добавляем активный класс текущей вкладке
+                    this.classList.add('active');
+                    document.getElementById(`${tabName}-tab`).classList.add('active');
+                    
+                    // Обновляем здание для кнопки улучшения
+                    updateUpgradeButtonBuilding();
+                });
+            });
+            
+            // Обработчики для кнопок скорости
+            document.querySelectorAll('.speed-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const speed = parseInt(this.dataset.speed);
+                    
+                    // Удаляем активный класс у всех кнопок
+                    document.querySelectorAll('.speed-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    
+                    // Добавляем активный класс текущей кнопке
+                    this.classList.add('active');
+                    
+                    // Устанавливаем новую скорость
+                    gameState.speed = speed;
+                    alert(`Скорость игры установлена: x${speed}`);
+                });
+            });
+            
+            // Обработчики для вкладок управления
+            document.querySelectorAll('.management-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.dataset.tab;
+                    
+                    // Удаляем активный класс у всех вкладок
+                    document.querySelectorAll('.management-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.management-section').forEach(s => s.classList.remove('active'));
+                    
+                    // Добавляем активный класс текущей вкладке
+                    this.classList.add('active');
+                    document.getElementById(`${tabName}-section`).classList.add('active');
+                });
+            });
+            
+            // Инициализация производственных линий
+            renderProductionLines();
+            
+            // Первоначальное обновление интерфейса
+            updateUI();
+        }
+        
+        // Игровой цикл
+        setInterval(() => {
+            // Добыча ресурсов
+            Object.keys(gameState.peasants.assigned).forEach(resource => {
+                if (resource === 'production') return;
+                
+                const production = gameState.peasants.assigned[resource] * miningRates[resource] * gameState.speed;
+                gameState.resources[resource] += production;
+            });
+            
+            // Производство на фабрике
+            const factoryLevel = gameState.buildings.factory;
+            const baseSpeed = factorySpeeds[factoryLevel - 1] || 0.1;
+            
+            gameState.productionLines.forEach(line => {
+                if (line.recipe && line.assigned > 0) {
+                    // Расчет производства в секунду
+                    const productionPerSecond = (baseSpeed / 3600) * (line.assigned / 250) * gameState.speed;
+                    
+                    // Обновление прогресса
+                    line.progress += productionPerSecond;
+                    
+                    // Проверка завершения производства
+                    if (line.progress >= 1) {
+                        const completedUnits = Math.floor(line.progress);
+                        line.progress -= completedUnits;
+                        
+                        // Добавление ресурсов в зависимости от рецепта
+                        switch (line.recipe) {
+                            case 'steel':
+                                gameState.resources.steel += completedUnits;
+                                break;
+                            case 'electronics':
+                                gameState.resources.electronicComponents += completedUnits;
+                                break;
+                            case 'batteries':
+                                gameState.resources.accumulators += completedUnits;
+                                break;
+                            case 'filters':
+                                gameState.resources.villadiumFilters += completedUnits;
+                                break;
+                        }
+                    }
+                }
+            });
+            
+            // Обновление интерфейса
+            updateUI();
+        }, 1000); // Обновление каждую секунду
+        
+        // Запуск игры при загрузке страницы
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>
